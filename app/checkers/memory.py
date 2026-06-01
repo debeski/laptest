@@ -2,6 +2,7 @@ import platform
 import psutil
 from app.checkers.base import CheckResult, Status
 from app.utils.formatters import fmt_bytes, fmt_mhz, fmt_voltage, fmt_pct
+from app.utils.platform_utils import IS_WINDOWS, IS_MAC
 
 _RAM_TYPES = {
     0: "Unknown", 1: "Other", 2: "DRAM", 20: "DDR",
@@ -11,7 +12,7 @@ _RAM_TYPES = {
 
 def _wmi_ram_info() -> tuple[list[dict], int]:
     """Returns (module_list, total_slots)."""
-    if platform.system() != "Windows":
+    if not IS_WINDOWS:
         return [], 0
     try:
         import wmi
@@ -36,6 +37,88 @@ def _wmi_ram_info() -> tuple[list[dict], int]:
         return modules, total_slots
     except Exception:
         return [], 0
+
+
+def _mac_ram_info() -> tuple[list[dict], int]:
+    """
+    Returns (module_list, total_slots) via system_profiler SPMemoryDataType.
+    On Apple Silicon the memory is unified/soldered; individual slot info may
+    not be available — we still report type and speed if the profiler exposes them.
+    """
+    if not IS_MAC:
+        return [], 0
+    from app.utils.platform_utils import run_sp
+    data = run_sp("SPMemoryDataType", timeout=15)
+    modules = []
+    for entry in data.get("SPMemoryDataType", []):
+        items = entry.get("_items", [])
+        if items:
+            # Intel Mac with actual DIMM slots
+            for item in items:
+                size_s   = item.get("dimm_size", "")
+                ram_type = item.get("dimm_type", "")
+                speed_s  = item.get("dimm_speed", "")
+                status   = item.get("dimm_status", "")
+                mfr      = item.get("dimm_manufacturer", "")
+                slot     = item.get("_name", "")
+                if "empty" in size_s.lower() or status.lower() == "empty":
+                    continue
+                cap = _parse_size_str(size_s)
+                spd = _parse_speed_str(speed_s)
+                modules.append({
+                    "capacity":     cap,
+                    "speed":        spd,
+                    "type":         ram_type,
+                    "voltage":      0.0,
+                    "manufacturer": mfr,
+                    "part_number":  "",
+                    "slot":         slot,
+                })
+        else:
+            # Apple Silicon: single unified memory block
+            size_s   = entry.get("dimm_size", "")
+            ram_type = entry.get("dimm_type", "")
+            speed_s  = entry.get("dimm_speed", "")
+            if size_s or ram_type:
+                cap = _parse_size_str(size_s)
+                spd = _parse_speed_str(speed_s)
+                modules.append({
+                    "capacity":     cap,
+                    "speed":        spd,
+                    "type":         ram_type or "Unified Memory",
+                    "voltage":      0.0,
+                    "manufacturer": "Apple",
+                    "part_number":  "",
+                    "slot":         "Unified Memory",
+                })
+    total_slots = len(modules)  # soldered = no free slots
+    return modules, total_slots
+
+
+def _parse_size_str(s: str) -> int:
+    """'8 GB' → bytes, '512 MB' → bytes."""
+    try:
+        parts = s.strip().split()
+        val = float(parts[0])
+        unit = parts[1].upper() if len(parts) > 1 else "GB"
+        if "GB" in unit:
+            return int(val * 1024 ** 3)
+        if "MB" in unit:
+            return int(val * 1024 ** 2)
+        if "TB" in unit:
+            return int(val * 1024 ** 4)
+    except Exception:
+        pass
+    return 0
+
+
+def _parse_speed_str(s: str) -> int:
+    """'2667 MHz' or '6400 MHz' → int MHz."""
+    try:
+        parts = s.strip().split()
+        return int(float(parts[0]))
+    except Exception:
+        return 0
 
 
 def run() -> list[CheckResult]:
@@ -63,9 +146,15 @@ def run() -> list[CheckResult]:
         status=Status.WARN if vm.available < 1 * 1024 ** 3 else Status.PASS,
     ))
 
-    modules, total_slots = _wmi_ram_info()
+    if IS_WINDOWS:
+        modules, total_slots = _wmi_ram_info()
+    elif IS_MAC:
+        modules, total_slots = _mac_ram_info()
+    else:
+        modules, total_slots = [], 0
+
     if modules:
-        types  = list({m["type"] for m in modules if m["type"] not in ("Unknown", "Other")})
+        types  = list({m["type"] for m in modules if m["type"] not in ("Unknown", "Other", "")})
         speeds = [m["speed"] for m in modules if m["speed"] > 0]
         used   = len(modules)
         dual   = used >= 2
@@ -86,39 +175,52 @@ def run() -> list[CheckResult]:
                 detail="Very slow by modern standards" if spd < 2000 else "",
             ))
 
-        slot_label = (f"{used} of {total_slots}" if total_slots > used
-                      else f"{used}" + (f" of {total_slots}" if total_slots else ""))
-        results.append(CheckResult(
-            key="memory_slots", label="Slots Used",
-            value=slot_label, status=Status.INFO,
-        ))
-        results.append(CheckResult(
-            key="memory_channels", label="Channel Mode",
-            value="Dual-channel" if dual else "Single-channel",
-            status=Status.PASS if dual else Status.WARN,
-            detail="Single-channel halves memory bandwidth" if not dual else "",
-        ))
-
-        voltages = [m["voltage"] for m in modules if m["voltage"] > 0]
-        if voltages:
+        # On Apple Silicon, memory is soldered — show total, skip "slots" framing
+        is_unified = any(m.get("slot") == "Unified Memory" for m in modules)
+        if is_unified:
             results.append(CheckResult(
-                key="memory_voltage", label="Voltage",
-                value=fmt_voltage(voltages[0]), status=Status.INFO,
+                key="memory_slots", label="Memory",
+                value="Unified (soldered on logic board)", status=Status.INFO,
+            ))
+        else:
+            slot_label = (f"{used} of {total_slots}" if total_slots > used
+                          else f"{used}" + (f" of {total_slots}" if total_slots else ""))
+            results.append(CheckResult(
+                key="memory_slots", label="Slots Used",
+                value=slot_label, status=Status.INFO,
+            ))
+            results.append(CheckResult(
+                key="memory_channels", label="Channel Mode",
+                value="Dual-channel" if dual else "Single-channel",
+                status=Status.PASS if dual else Status.WARN,
+                detail="Single-channel halves memory bandwidth" if not dual else "",
             ))
 
-        # Per-module detail
+        if not is_unified:
+            voltages = [m["voltage"] for m in modules if m["voltage"] > 0]
+            if voltages:
+                results.append(CheckResult(
+                    key="memory_voltage", label="Voltage",
+                    value=fmt_voltage(voltages[0]), status=Status.INFO,
+                ))
+
         for m in modules:
+            if m.get("slot") == "Unified Memory":
+                continue  # already shown as "Memory" row above
             label = m["slot"] or f"Module {modules.index(m) + 1}"
-            parts = [p for p in [m["manufacturer"], m["part_number"], fmt_bytes(m["capacity"]) if m["capacity"] else ""] if p]
+            parts = [p for p in [m["manufacturer"], m["part_number"],
+                                  fmt_bytes(m["capacity"]) if m["capacity"] else ""] if p]
             if parts:
                 results.append(CheckResult(
                     key="memory_type", label=label,
                     value=" · ".join(parts), status=Status.INFO,
                 ))
     else:
+        msg = ("Requires elevated permissions for WMI access" if IS_WINDOWS
+               else "Module detail unavailable")
         results.append(CheckResult(
             key="memory_type", label="Module Detail",
-            value="Requires elevated permissions for WMI access",
+            value=msg,
             status=Status.INFO,
         ))
 

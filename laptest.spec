@@ -30,12 +30,14 @@ hiddenimports += collect_submodules("app.core")
 hiddenimports += collect_submodules("app.ui")
 hiddenimports += collect_submodules("app.utils")
 hiddenimports += collect_submodules("psutil")
-hiddenimports += collect_submodules("cpuinfo")
-hiddenimports += ["wmi", "win32api", "win32con", "win32security",
-                   "pywintypes", "pythoncom"]
 hiddenimports += collect_submodules("sounddevice")
 hiddenimports += collect_submodules("cv2")
 hiddenimports += ["numpy", "numpy.core", "numpy.core._multiarray_umath"]
+
+# Windows-only deps — do not add on macOS (packages not installed there)
+if sys.platform == "win32":
+    hiddenimports += ["wmi", "win32api", "win32con", "win32security",
+                       "pywintypes", "pythoncom"]
 
 # ── Icons ─────────────────────────────────────────────────────────────────
 ico  = str(project_root / "app.ico")   if (project_root / "app.ico").exists()  else None
@@ -98,8 +100,8 @@ if sys.platform == "darwin":
         icon=icns,
         bundle_identifier="com.debeski.laptest",
         info_plist={
-            "CFBundleShortVersionString": "1.0.0",
-            "CFBundleVersion":            "1.0.0",
+            "CFBundleShortVersionString": "0.2.0",
+            "CFBundleVersion":            "0.2.0",
             "NSHighResolutionCapable":    True,
             "NSRequiresAquaSystemAppearance": False,
         },

@@ -2,7 +2,7 @@ import platform
 import psutil
 from app.checkers.base import CheckResult, Status
 from app.utils.formatters import fmt_mhz, fmt_temp, fmt_pct
-from app.utils.platform_utils import IS_WINDOWS
+from app.utils.platform_utils import IS_WINDOWS, IS_MAC
 
 
 def _wmi_cpu() -> dict:
@@ -25,6 +25,22 @@ def _wmi_cpu() -> dict:
             }
     except Exception:
         return {}
+
+
+def _mac_cpu_name() -> str:
+    """Get CPU/chip name on macOS (works for both Intel and Apple Silicon)."""
+    from app.utils.platform_utils import run_command, run_sp
+    # Intel: sysctl returns the brand string directly
+    name = run_command(["sysctl", "-n", "machdep.cpu.brand_string"], timeout=5)
+    if name:
+        return name
+    # Apple Silicon: use system_profiler
+    data = run_sp("SPHardwareDataType", timeout=10)
+    for hw in data.get("SPHardwareDataType", []):
+        chip = hw.get("cpu_type", "")
+        if chip:
+            return chip
+    return ""
 
 
 def _cpu_generation(brand: str) -> str:
@@ -73,7 +89,10 @@ def run() -> list[CheckResult]:
     results = []
     info = _wmi_cpu()
 
-    name = info.get("name") or platform.processor() or "Unknown"
+    if IS_MAC:
+        name = _mac_cpu_name() or platform.processor() or "Unknown"
+    else:
+        name = info.get("name") or platform.processor() or "Unknown"
     results.append(CheckResult(
         key="cpu_model", label="CPU Model",
         value=name, status=Status.INFO,

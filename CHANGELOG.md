@@ -5,6 +5,33 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.2.0] — 2026-06-01
+
+### Added — macOS native backends
+
+All checkers now have a proper macOS code path alongside the existing Windows (WMI) path. The two are fully separated; no macOS-only code is reached on Windows and vice versa.
+
+| Category | macOS source |
+|---|---|
+| **GPU** | `system_profiler SPDisplaysDataType` — model, vendor, GPU cores, VRAM (or "Shared" for Apple Silicon) |
+| **Network** | `system_profiler SPAirPortDataType` + `SPNetworkDataType` + `SPBluetoothDataType` — Wi-Fi name, connected SSID, standard (802.11ac/ax…), Ethernet, Bluetooth |
+| **Ports** | `system_profiler SPUSBDataType` + `SPThunderboltDataType` + `SPCardReaderDataType` + `SPAudioDataType` — Thunderbolt version/count, USB 3.x controllers, USB-C, SD card reader, 3.5 mm jack |
+| **System / BIOS** | `system_profiler SPHardwareDataType` (machine model, chip, firmware); `ioreg AppleLMUController` (ALS); `csrutil`/`SPiBridgeDataType` (Secure Boot); Secure Enclave / T2 chip in place of TPM |
+| **Storage** | `system_profiler SPStorageDataType` — deduplicated physical drive list with model, type (NVMe/SSD), capacity, SMART "Verified" status; APFS/GPT noted as default |
+| **Memory** | `system_profiler SPMemoryDataType` — type (LPDDR5/DDR4), speed, per-DIMM detail for Intel; "Unified (soldered)" for Apple Silicon |
+| **Battery** | `ioreg AppleSmartBattery` — health %, wear, capacity (mAh), cycle count, temperature, voltage; Apple-adjusted cycle thresholds (500/1000 vs 300/600 on Windows) |
+| **Input Devices** | `ioreg AppleMultitouchTrackpad` for trackpad; `sysctl hw.model` for keyboard; `SPiBridgeDataType` / `arm64` detection for Touch ID |
+| **CPU** | `sysctl machdep.cpu.brand_string` (Intel) / `system_profiler SPHardwareDataType` (Apple Silicon) for model name |
+| **Thermal** | `psutil.sensors_temperatures()` on Intel; informational note + `sudo powermetrics` guidance on Apple Silicon |
+
+### Changed
+- `laptest.spec`: Windows-only hidden imports (`wmi`, `win32api`, etc.) now wrapped in `if sys.platform == "win32"` — macOS builds no longer warn about missing packages
+- `requirements.txt`: removed `py-cpuinfo` (unused since 0.1.1; was root cause of false second-instance popups)
+- `laptest.spec`: removed `collect_submodules("cpuinfo")` entry
+- `laptest.spec`: updated `CFBundleShortVersionString` to `0.2.0`
+
+---
+
 ## [0.1.1] — 2026-06-01
 
 ### Fixed

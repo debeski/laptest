@@ -37,6 +37,18 @@ def run_ps(command: str, timeout: int = 10) -> str:
     )
 
 
+def run_sp(datatype: str, timeout: int = 15) -> dict:
+    """Run system_profiler <datatype> -json on macOS and return the parsed dict."""
+    if not IS_MAC:
+        return {}
+    import json as _json
+    out = run_command(["system_profiler", datatype, "-json"], timeout=timeout)
+    try:
+        return _json.loads(out)
+    except Exception:
+        return {}
+
+
 def get_wmi(namespace: str = "root/cimv2"):
     if IS_WINDOWS:
         try:

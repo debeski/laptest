@@ -2,7 +2,7 @@ import platform
 import psutil
 from app.checkers.base import CheckResult, Status
 from app.utils.formatters import fmt_temp, fmt_rpm
-from app.utils.platform_utils import run_ps, IS_WINDOWS
+from app.utils.platform_utils import run_ps, IS_WINDOWS, IS_MAC
 
 
 def _cpu_temp_from_wmi() -> float | None:
@@ -23,7 +23,6 @@ def _cpu_temp_from_wmi() -> float | None:
 
 
 def _cpu_temp_from_ps() -> float | None:
-    """Read CPU temp via PowerShell Get-WmiObject thermal zone."""
     try:
         out = run_ps(
             "(Get-WmiObject -Namespace root/wmi -Class MSAcpi_ThermalZoneTemperature"
@@ -39,6 +38,23 @@ def _cpu_temp_from_ps() -> float | None:
     return None
 
 
+def _mac_temps() -> dict[str, float]:
+    """
+    Try to read temperatures on macOS via psutil (works on some Intel Macs).
+    Apple Silicon does not expose SMC sensors without sudo powermetrics.
+    """
+    temps: dict[str, float] = {}
+    try:
+        sensor_data = psutil.sensors_temperatures() or {}
+        for label, entries in sensor_data.items():
+            for e in entries:
+                key = f"{label}/{e.label}" if e.label else label
+                temps[key] = e.current
+    except Exception:
+        pass
+    return temps
+
+
 def _all_temps() -> dict[str, float]:
     temps: dict[str, float] = {}
     try:
@@ -49,7 +65,7 @@ def _all_temps() -> dict[str, float]:
     except Exception:
         pass
 
-    if not temps:
+    if not temps and IS_WINDOWS:
         t = _cpu_temp_from_wmi() or _cpu_temp_from_ps()
         if t is not None:
             temps["cpu"] = t
@@ -76,7 +92,6 @@ def _fans() -> list[dict]:
 
 
 def _throttle_status() -> tuple[str, Status]:
-    """Estimate throttling by comparing current vs max CPU frequency."""
     try:
         freq = psutil.cpu_freq()
         if freq and freq.max > 0:
@@ -91,69 +106,116 @@ def _throttle_status() -> tuple[str, Status]:
 
 def run() -> list[CheckResult]:
     results = []
-    temps = _all_temps()
 
-    if temps:
-        cpu_keys = [k for k in temps if any(
-            x in k.lower() for x in ("core", "cpu", "package", "k10", "coretemp")
-        )]
-        cpu_temp = max(temps[k] for k in cpu_keys) if cpu_keys else (
-            temps.get("cpu") or next(iter(temps.values()), None)
-        )
-        if cpu_temp is not None:
-            t_status = (Status.PASS if cpu_temp < 70
-                        else Status.WARN if cpu_temp < 90
-                        else Status.FAIL)
+    if IS_MAC:
+        # On Apple Silicon, psutil cannot read SMC temps without sudo powermetrics
+        temps = _mac_temps()
+        if temps:
+            cpu_keys = [k for k in temps if any(
+                x in k.lower() for x in ("core", "cpu", "package", "k10", "coretemp")
+            )]
+            cpu_temp = max(temps[k] for k in cpu_keys) if cpu_keys else next(iter(temps.values()), None)
+            if cpu_temp is not None:
+                t_status = (Status.PASS if cpu_temp < 70
+                            else Status.WARN if cpu_temp < 90
+                            else Status.FAIL)
+                results.append(CheckResult(
+                    key="thermal_cpu_temp", label="CPU Temperature",
+                    value=fmt_temp(cpu_temp), status=t_status,
+                ))
+        else:
             results.append(CheckResult(
-                key="thermal_cpu_temp", label="CPU Temperature",
-                value=fmt_temp(cpu_temp), status=t_status,
-                detail="Very hot — check thermal paste and fan clearance" if cpu_temp >= 90 else "",
+                key="thermal_cpu_temp", label="Temperature Sensors",
+                value="Not accessible without elevated permissions",
+                status=Status.INFO,
+                detail="macOS restricts SMC sensor access. Run 'sudo powermetrics --samplers smc' in Terminal for live temperature data.",
             ))
 
-        gpu_keys = [k for k in temps if "gpu" in k.lower()]
-        if gpu_keys:
-            gpu_temp = max(temps[k] for k in gpu_keys)
-            g_status = (Status.PASS if gpu_temp < 80
-                        else Status.WARN if gpu_temp < 95
-                        else Status.FAIL)
+        fans = _fans()
+        if fans:
             results.append(CheckResult(
-                key="thermal_gpu_temp", label="GPU Temperature",
-                value=fmt_temp(gpu_temp), status=g_status,
+                key="thermal_fan_count", label="Fan Count",
+                value=str(len(fans)), status=Status.INFO,
             ))
+            for f in fans:
+                rpm = f["rpm"]
+                f_status = Status.PASS if rpm > 500 else (Status.WARN if rpm > 0 else Status.FAIL)
+                results.append(CheckResult(
+                    key="thermal_fan_speed", label=f"Fan: {f['label']}",
+                    value=fmt_rpm(rpm) if rpm > 0 else "0 RPM — stalled?",
+                    status=f_status,
+                ))
+        else:
+            results.append(CheckResult(
+                key="thermal_fan_count", label="Fan Data",
+                value="Not accessible via OS",
+                status=Status.INFO,
+                detail="Fan RPM data requires 'sudo powermetrics' on macOS",
+            ))
+
     else:
-        results.append(CheckResult(
-            key="thermal_cpu_temp", label="Temperature Sensors",
-            value="Not accessible",
-            status=Status.INFO,
-            detail="Temperature monitoring requires elevated permissions "
-                   "or hardware-specific drivers (try running as administrator)",
-        ))
+        temps = _all_temps()
+        if temps:
+            cpu_keys = [k for k in temps if any(
+                x in k.lower() for x in ("core", "cpu", "package", "k10", "coretemp")
+            )]
+            cpu_temp = max(temps[k] for k in cpu_keys) if cpu_keys else (
+                temps.get("cpu") or next(iter(temps.values()), None)
+            )
+            if cpu_temp is not None:
+                t_status = (Status.PASS if cpu_temp < 70
+                            else Status.WARN if cpu_temp < 90
+                            else Status.FAIL)
+                results.append(CheckResult(
+                    key="thermal_cpu_temp", label="CPU Temperature",
+                    value=fmt_temp(cpu_temp), status=t_status,
+                    detail="Very hot — check thermal paste and fan clearance" if cpu_temp >= 90 else "",
+                ))
 
-    fans = _fans()
-    if fans:
-        results.append(CheckResult(
-            key="thermal_fan_count", label="Fan Count",
-            value=str(len(fans)), status=Status.INFO,
-        ))
-        for f in fans:
-            rpm = f["rpm"]
-            f_status = (Status.PASS if rpm > 500
-                        else Status.WARN if rpm > 0
-                        else Status.FAIL)
+            gpu_keys = [k for k in temps if "gpu" in k.lower()]
+            if gpu_keys:
+                gpu_temp = max(temps[k] for k in gpu_keys)
+                g_status = (Status.PASS if gpu_temp < 80
+                            else Status.WARN if gpu_temp < 95
+                            else Status.FAIL)
+                results.append(CheckResult(
+                    key="thermal_gpu_temp", label="GPU Temperature",
+                    value=fmt_temp(gpu_temp), status=g_status,
+                ))
+        else:
             results.append(CheckResult(
-                key="thermal_fan_speed", label=f"Fan: {f['label']}",
-                value=fmt_rpm(rpm) if rpm > 0 else "0 RPM — stalled?",
-                status=f_status,
-                detail="Fan may be stalled — check physically" if rpm == 0 else "",
+                key="thermal_cpu_temp", label="Temperature Sensors",
+                value="Not accessible",
+                status=Status.INFO,
+                detail="Temperature monitoring requires elevated permissions "
+                       "or hardware-specific drivers (try running as administrator)",
             ))
-    else:
-        results.append(CheckResult(
-            key="thermal_fan_count", label="Fan Data",
-            value="Not accessible via OS",
-            status=Status.INFO,
-            detail="Fan RPM data typically requires vendor WMI extensions "
-                   "(Dell, HP, Lenovo) or tools like HWInfo",
-        ))
+
+        fans = _fans()
+        if fans:
+            results.append(CheckResult(
+                key="thermal_fan_count", label="Fan Count",
+                value=str(len(fans)), status=Status.INFO,
+            ))
+            for f in fans:
+                rpm = f["rpm"]
+                f_status = (Status.PASS if rpm > 500
+                            else Status.WARN if rpm > 0
+                            else Status.FAIL)
+                results.append(CheckResult(
+                    key="thermal_fan_speed", label=f"Fan: {f['label']}",
+                    value=fmt_rpm(rpm) if rpm > 0 else "0 RPM — stalled?",
+                    status=f_status,
+                    detail="Fan may be stalled — check physically" if rpm == 0 else "",
+                ))
+        else:
+            results.append(CheckResult(
+                key="thermal_fan_count", label="Fan Data",
+                value="Not accessible via OS",
+                status=Status.INFO,
+                detail="Fan RPM data typically requires vendor WMI extensions "
+                       "(Dell, HP, Lenovo) or tools like HWInfo",
+            ))
 
     throttle, t_status = _throttle_status()
     results.append(CheckResult(

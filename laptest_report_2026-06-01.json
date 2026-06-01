@@ -1,0 +1,420 @@
+{
+  "storage": [
+    {
+      "key": "storage_capacity",
+      "label": "Drive (/)",
+      "value": "926.4 GB",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "storage_capacity",
+      "label": "Drive (/System/Volumes/VM)",
+      "value": "926.4 GB",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "storage_capacity",
+      "label": "Drive (/System/Volumes/Preboot)",
+      "value": "926.4 GB",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "storage_capacity",
+      "label": "Drive (/System/Volumes/Update)",
+      "value": "926.4 GB",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "storage_capacity",
+      "label": "Drive (/System/Volumes/xarts)",
+      "value": "500.0 MB",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "storage_capacity",
+      "label": "Drive (/System/Volumes/iSCPreboot)",
+      "value": "500.0 MB",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "storage_capacity",
+      "label": "Drive (/System/Volumes/Hardware)",
+      "value": "500.0 MB",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "storage_capacity",
+      "label": "Drive (/System/Volumes/Data)",
+      "value": "926.4 GB",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "storage_capacity",
+      "label": "Drive (/Volumes/Docker)",
+      "value": "2.4 GB",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "storage_health",
+      "label": "Drive Health",
+      "value": "Run as administrator for full SMART data",
+      "status": "info",
+      "detail": ""
+    }
+  ],
+  "memory": [
+    {
+      "key": "memory_total",
+      "label": "Total RAM",
+      "value": "16.0 GB",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "key": "memory_used",
+      "label": "Used",
+      "value": "7.5 GB (62%)",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "key": "memory_available",
+      "label": "Available",
+      "value": "6.1 GB",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "key": "memory_type",
+      "label": "Module Detail",
+      "value": "Requires elevated permissions for WMI access",
+      "status": "info",
+      "detail": ""
+    }
+  ],
+  "cpu": [
+    {
+      "key": "cpu_model",
+      "label": "CPU Model",
+      "value": "arm",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "cpu_arch",
+      "label": "Architecture",
+      "value": "arm64",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "cpu_cores",
+      "label": "Cores / Threads",
+      "value": "10 / 10",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "key": "cpu_speed",
+      "label": "Base / Max Speed",
+      "value": "3.23 GHz / 3.23 GHz",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "key": "cpu_usage",
+      "label": "Current Usage",
+      "value": "12.0%",
+      "status": "pass",
+      "detail": ""
+    }
+  ],
+  "gpu": [
+    {
+      "key": "gpu_model",
+      "label": "GPU",
+      "value": "Could not detect",
+      "status": "info",
+      "detail": ""
+    }
+  ],
+  "display": [
+    {
+      "key": "display_resolution",
+      "label": "Resolution",
+      "value": "3600 × 2338",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "key": "display_refresh",
+      "label": "Refresh Rate",
+      "value": "120 Hz",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "key": "display_ppi",
+      "label": "Pixel Density",
+      "value": "303 PPI",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "key": "display_size",
+      "label": "Screen Size",
+      "value": "14.2\"",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "display_touch",
+      "label": "Touch Screen",
+      "value": "No",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "display_dead_pixels",
+      "label": "Dead Pixel Test",
+      "value": "Manual test required",
+      "status": "info",
+      "detail": "Use the dead pixel test in the Display tab to check visually"
+    }
+  ],
+  "battery": [
+    {
+      "key": "battery_status",
+      "label": "Status",
+      "value": "On battery",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "battery_health",
+      "label": "Charge Level",
+      "value": "26%",
+      "status": "pass",
+      "detail": ""
+    },
+    {
+      "key": "battery_time",
+      "label": "Time Remaining",
+      "value": "2h 15m",
+      "status": "pass",
+      "detail": ""
+    }
+  ],
+  "input": [
+    {
+      "key": "input_keyboard",
+      "label": "Keyboard",
+      "value": "Keyboard (assumed present)",
+      "status": "pass",
+      "detail": "Press each key in the Key Test to verify all keys work"
+    },
+    {
+      "key": "input_touchpad",
+      "label": "Touchpad",
+      "value": "Not detected",
+      "status": "warn",
+      "detail": "Touchpad driver not found"
+    },
+    {
+      "key": "input_fingerprint",
+      "label": "Fingerprint Reader",
+      "value": "Not present",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "input_key_test",
+      "label": "Key Press Test",
+      "value": "Use interactive test",
+      "status": "info",
+      "detail": "Go to the Keyboard tab and press each key to confirm it registers"
+    }
+  ],
+  "audio": [
+    {
+      "key": "audio_speakers",
+      "label": "Audio Devices",
+      "value": "None detected",
+      "status": "warn",
+      "detail": "No audio devices found — check drivers"
+    },
+    {
+      "key": "audio_microphone",
+      "label": "Microphone",
+      "value": "Not detected",
+      "status": "warn",
+      "detail": "Use the microphone test button to verify recording"
+    },
+    {
+      "key": "audio_speakers",
+      "label": "Speaker Test",
+      "value": "Use test button",
+      "status": "info",
+      "detail": "Click 'Test Speakers' in the Audio tab to verify output"
+    }
+  ],
+  "webcam": [
+    {
+      "key": "webcam_model",
+      "label": "Webcam",
+      "value": "No camera detected",
+      "status": "warn",
+      "detail": "Camera may not be present or driver is missing"
+    }
+  ],
+  "network": [
+    {
+      "key": "network_wifi",
+      "label": "Wi-Fi",
+      "value": "Not detected",
+      "status": "warn",
+      "detail": "No Wi-Fi adapter found"
+    },
+    {
+      "key": "network_ethernet",
+      "label": "Ethernet",
+      "value": "Not detected",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "network_bluetooth",
+      "label": "Bluetooth",
+      "value": "Not detected",
+      "status": "warn",
+      "detail": ""
+    }
+  ],
+  "ports": [
+    {
+      "key": "ports_usb",
+      "label": "USB Ports",
+      "value": "Could not enumerate — try running as administrator",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "ports_hdmi",
+      "label": "Video Outputs",
+      "value": "Not enumerated via PnP — check GPU specs",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "ports_sdcard",
+      "label": "SD Card Reader",
+      "value": "Not detected",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "ports_audio_jack",
+      "label": "Audio Jack",
+      "value": "Not detected",
+      "status": "info",
+      "detail": ""
+    }
+  ],
+  "system": [
+    {
+      "key": "system_os",
+      "label": "Operating System",
+      "value": "Darwin 25.5.0 (Darwin Kernel Version 25.)",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "system_architecture",
+      "label": "Architecture",
+      "value": "arm64",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "system_hostname",
+      "label": "Hostname",
+      "value": "pcs-MacBook-Pro.local",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "system_uptime",
+      "label": "Uptime",
+      "value": "122h 36m",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "system_boot_mode",
+      "label": "Boot Mode",
+      "value": "Unknown",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "system_secure_boot",
+      "label": "Secure Boot",
+      "value": "Unknown",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "system_tpm",
+      "label": "TPM",
+      "value": "Not detected",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "system_activation",
+      "label": "Windows Activation",
+      "value": "N/A",
+      "status": "info",
+      "detail": ""
+    },
+    {
+      "key": "system_als",
+      "label": "Ambient Light Sensor",
+      "value": "Not present",
+      "status": "info",
+      "detail": ""
+    }
+  ],
+  "thermal": [
+    {
+      "key": "thermal_cpu_temp",
+      "label": "Temperature Sensors",
+      "value": "Not accessible",
+      "status": "info",
+      "detail": "Temperature monitoring requires elevated permissions or hardware-specific drivers (try running as administrator)"
+    },
+    {
+      "key": "thermal_fan_count",
+      "label": "Fan Data",
+      "value": "Not accessible via OS",
+      "status": "info",
+      "detail": "Fan RPM data typically requires vendor WMI extensions (Dell, HP, Lenovo) or tools like HWInfo"
+    },
+    {
+      "key": "thermal_throttle",
+      "label": "Thermal Throttling",
+      "value": "Not detected",
+      "status": "pass",
+      "detail": ""
+    }
+  ]
+}
