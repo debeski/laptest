@@ -37,14 +37,19 @@ def _mac_network() -> dict:
     # Wi-Fi info
     airport = run_sp("SPAirPortDataType", timeout=15)
     for entry in airport.get("SPAirPortDataType", []):
-        card_type = entry.get("spairport_wireless_card_type", "")
+        import re as _re
+        # Clean up card-type string: strip hex vendor IDs like "(0x14E4, 0x4387)"
+        raw_type = entry.get("spairport_wireless_card_type", "")
+        card_name = _re.sub(r"\s*\(0x[0-9a-fA-F,\s]+\)", "", raw_type).strip()
+        card_name = card_name or "Apple Wi-Fi"
+
         current = entry.get("spairport_current-network-information", {})
         phymode = current.get("spairport_current_network_phymode", "")
         ssid    = current.get("_name", "")
         result["wifi"] = {
-            "name":    card_type or "AirPort",
-            "ssid":    ssid,
-            "phymode": phymode,
+            "name":      card_name,
+            "ssid":      ssid,
+            "phymode":   phymode,
             "connected": bool(ssid),
         }
         break
@@ -205,13 +210,16 @@ def run() -> list[CheckResult]:
 
         wifi = mac_net.get("wifi")
         if wifi:
-            ssid  = wifi["ssid"]
-            label = f'{wifi["name"]} — connected to "{ssid}"' if ssid else wifi["name"]
+            ssid = wifi["ssid"]
+            if ssid:
+                value = f'Connected — "{ssid}"'
+            else:
+                value = f'{wifi["name"]} (not connected)'
             results.append(CheckResult(
                 key="network_wifi", label="Wi-Fi",
-                value=label,
+                value=value,
                 status=Status.PASS if wifi["connected"] else Status.WARN,
-                detail="" if wifi["connected"] else "Wi-Fi not connected to a network",
+                detail="" if wifi["connected"] else "Wi-Fi adapter found but not connected to a network",
             ))
             std = _wifi_standard_from_phymode(wifi.get("phymode", ""))
             results.append(CheckResult(

@@ -184,7 +184,8 @@ QPushButton[app-btn="icon"] {{
     background: transparent;
     border: none;
     border-radius: {r}px;
-    padding: 6px;
+    padding: 4px;
+    font-size: 18px;
     color: {clr("text_secondary")};
 }}
 QPushButton[app-btn="icon"]:hover {{

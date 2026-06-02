@@ -1,3 +1,4 @@
+import sys
 import threading
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QSizePolicy
 from PyQt6.QtCore import Qt, pyqtSignal
@@ -53,13 +54,16 @@ class WebcamTestDialog(QDialog):
             import cv2
         except ImportError:
             self._status.set_status("warn")
-            self._status.setText("opencv-python not installed")
+            self._status.setText("opencv-python not installed — run: pip install opencv-python")
             return
         import cv2
         self._cap = cv2.VideoCapture(0)
         if not self._cap.isOpened():
+            msg = "No camera found"
+            if sys.platform == "darwin":
+                msg = "No camera — grant Camera access in System Settings → Privacy & Security"
             self._status.set_status("fail")
-            self._status.setText("No camera found")
+            self._status.setText(msg)
             return
         self._running = True
         self._start_btn.setEnabled(False)

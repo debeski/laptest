@@ -5,6 +5,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [0.2.1] — 2026-06-01
+
+### Fixed — macOS polish
+
+- **Keyboard test layout**: Mac now shows the correct keyboard map — `Cmd`/`Option`/`Ctrl` bottom row, `Delete`/`Return` labels, and arrow keys (`←` `→` `↑` `↓`). Key events map correctly: `Key_Meta → Cmd`, `Key_Alt → Option`, `Key_Backspace → Delete`. Duplicate keys (two Shift, two Cmd, two Option) tracked independently.
+- **Audio tones**: speaker test now uses `sounddevice` directly (cross-platform, no subprocess). Falls back to `afplay` on macOS / `aplay` on Linux / `winsound` on Windows. Previously fell through to `aplay` on macOS (Linux-only tool), producing silence.
+- **Audio mic recording**: added error display if `sounddevice` raises (e.g., permission denied). Added macOS privacy hint pointing to System Settings → Privacy & Security → Microphone.
+- **Audio checker**: added macOS backend via `system_profiler SPAudioDataType`. Now detects built-in speakers and microphone by name (e.g., "MacBook Pro Speakers", "MacBook Pro Microphone"). Falls back to `sounddevice.query_devices()` if profiler returns nothing.
+- **Battery health** (Apple Silicon): `MaxCapacity` in ioreg returns `100` on M-series (a percentage scale, not mAh). Now reads `AppleRawMaxCapacity` first; falls back to `MaxCapacity` only when it looks like actual mAh (> 100). Prevents the "1.6% healthy" bug.
+- **Wi-Fi display**: card-type string from `SPAirPortDataType` included raw hex vendor IDs like `(0x14E4, 0x4387)`. Now stripped with regex. Connected value shows `Connected — "SSID"` or `<adapter> (not connected)`.
+- **Settings icon too small**: `QPushButton[app-btn="icon"]` now sets `font-size: 18px` explicitly so the ⚙ emoji renders at a readable size on macOS (previously inherited 13 px body font).
+- **Webcam checker**: added `system_profiler SPCameraDataType` macOS detection so the checker shows camera name (e.g., "FaceTime HD Camera (Built-in)") even without OpenCV installed.
+- **Webcam test dialog**: improved error messages — "opencv-python not installed — run: pip install opencv-python" and macOS-specific camera permission guidance.
+- **laptest.spec**: added `NSMicrophoneUsageDescription` + `NSCameraUsageDescription` to macOS `Info.plist` — without these keys the OS silently blocks mic/camera access even after the user grants permission in System Settings.
+
+---
+
 ## [0.2.0] — 2026-06-01
 
 ### Added — macOS native backends

@@ -104,5 +104,8 @@ if sys.platform == "darwin":
             "CFBundleVersion":            "0.2.0",
             "NSHighResolutionCapable":    True,
             "NSRequiresAquaSystemAppearance": False,
+            # Required for macOS to show permission prompts
+            "NSMicrophoneUsageDescription": "LapTest records a 3-second audio clip to verify the microphone works.",
+            "NSCameraUsageDescription":     "LapTest opens the camera to verify the webcam works.",
         },
     )

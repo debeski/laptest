@@ -79,17 +79,28 @@ def _mac_battery_detail() -> dict:
             b = data
         else:
             return {}
+        # On Apple Silicon, MaxCapacity may be 100 (a % scale, not mAh).
+        # AppleRawMaxCapacity is always in mAh — prefer it.
+        raw_max = b.get("AppleRawMaxCapacity") or b.get("AppleMaxCapacity")
+        max_cap = int(raw_max) if raw_max is not None else int(b.get("MaxCapacity", 0))
+        design  = int(b.get("DesignCapacity", 0))
+
+        # Sanity check: if max_cap looks like a percentage (≤ 100) but design > 1000,
+        # MaxCapacity is a percent scale — cannot compute meaningful mAh health.
+        if max_cap <= 100 and design > 500:
+            max_cap = 0  # skip health calculation; avoid the 1.6% bug
+
         return {
-            "design_capacity": int(b.get("DesignCapacity", 0)),
-            "max_capacity":    int(b.get("MaxCapacity", 0)),
-            "current_capacity": int(b.get("CurrentCapacity", 0)),
-            "cycle_count":     int(b.get("CycleCount", 0)),
-            "temperature":     b.get("Temperature"),   # units: 0.01 °C
-            "is_charging":     bool(b.get("IsCharging", False)),
-            "external":        bool(b.get("ExternalConnected", False)),
-            "fully_charged":   bool(b.get("FullyCharged", False)),
-            "voltage_mv":      int(b.get("Voltage", 0)),
-            "manufacturer":    str(b.get("Manufacturer", "") or ""),
+            "design_capacity":  design,
+            "max_capacity":     max_cap,
+            "current_capacity": int(b.get("AppleRawCurrentCapacity") or b.get("CurrentCapacity") or 0),
+            "cycle_count":      int(b.get("CycleCount", 0)),
+            "temperature":      b.get("Temperature"),   # units: 0.01 °C
+            "is_charging":      bool(b.get("IsCharging", False)),
+            "external":         bool(b.get("ExternalConnected", False)),
+            "fully_charged":    bool(b.get("FullyCharged", False)),
+            "voltage_mv":       int(b.get("Voltage", 0)),
+            "manufacturer":     str(b.get("Manufacturer", "") or ""),
         }
     except Exception:
         return {}
