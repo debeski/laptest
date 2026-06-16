@@ -4,6 +4,8 @@ from pathlib import Path
 from PyInstaller.utils.hooks import collect_submodules, collect_data_files
 
 project_root = Path(SPECPATH)
+_version_file = project_root / "VERSION"
+app_version = _version_file.read_text(encoding="utf-8").strip() if _version_file.exists() else "0.0.0"
 
 
 def collect_tree(relative_root: str):
@@ -100,8 +102,8 @@ if sys.platform == "darwin":
         icon=icns,
         bundle_identifier="com.debeski.laptest",
         info_plist={
-            "CFBundleShortVersionString": "0.2.0",
-            "CFBundleVersion":            "0.2.0",
+            "CFBundleShortVersionString": app_version,
+            "CFBundleVersion":            app_version,
             "NSHighResolutionCapable":    True,
             "NSRequiresAquaSystemAppearance": False,
             # Required for macOS to show permission prompts
