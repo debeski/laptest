@@ -1,0 +1,58 @@
+name: CI
+
+# Green-checkmark gate on every push/PR to main: verify the app packages on both
+# Windows (PyInstaller onedir + Inno Setup installer) and macOS (.app bundle).
+# Releases run separately via release.yml on version tags.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          architecture: x64
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller
+      - name: Build (PyInstaller onedir)
+        run: python -m PyInstaller --noconfirm --clean laptest.spec
+      - name: Verify build
+        shell: pwsh
+        run: |
+          if (!(Test-Path dist/LapTest/LapTest.exe)) { throw "dist/LapTest/LapTest.exe not produced" }
+      - name: Install Inno Setup
+        run: choco install innosetup --no-progress -y
+      - name: Compile installer
+        shell: pwsh
+        run: |
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" laptest.iss
+          $ver = (Get-Content VERSION -Raw).Trim()
+          if (!(Test-Path "LapTest-Setup-$ver.exe")) { throw "installer was not produced" }
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt pyinstaller
+      - name: Build (.app bundle)
+        run: python -m PyInstaller --noconfirm --clean laptest.spec
+      - name: Verify build
+        run: test -d "dist/LapTest.app" || { echo "dist/LapTest.app not produced"; exit 1; }
