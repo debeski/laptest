@@ -7,6 +7,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [0.2.1] — 2026-06-01
 
+### Added
+
+- **CI/CD pipeline**: GitHub Actions builds and packages on Windows (PyInstaller onedir + Inno Setup installer) and macOS (`.app` bundle). Tag-driven (`v*`) releases attach `LapTest-Setup-<ver>.exe` and `LapTest-<ver>-macos.zip` to a GitHub Release, with notes pulled from this changelog.
+
+### Changed
+
+- **macOS bundle version**: `CFBundleShortVersionString`/`CFBundleVersion` in `laptest.spec` now read from the `VERSION` file instead of a hardcoded `0.2.0`.
+
 ### Fixed — macOS polish
 
 - **Keyboard test layout**: Mac now shows the correct keyboard map — `Cmd`/`Option`/`Ctrl` bottom row, `Delete`/`Return` labels, and arrow keys (`←` `→` `↑` `↓`). Key events map correctly: `Key_Meta → Cmd`, `Key_Alt → Option`, `Key_Backspace → Delete`. Duplicate keys (two Shift, two Cmd, two Option) tracked independently.
